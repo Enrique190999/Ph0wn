@@ -26,6 +26,9 @@ def save_page(url, carpeta_destino=None) -> str:
         return None
 
     soup = BeautifulSoup(response.text, "html.parser")
+    for script in soup.find_all("script", src=True):
+        if "service-nologin.php" in script["src"] or "lib/ajax/service-nologin.php" in script["src"]:
+            script.decompose()
 
     # Mapas de tag/atributo y carpetas de destino
     recursos = []
