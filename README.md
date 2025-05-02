@@ -49,7 +49,7 @@ Launch the main menu:
 python main.py
 ```
 
-You’ll see a hacker-style banner and menu:
+You’ll see this menu:
 
 ```
  ____  _      ___
