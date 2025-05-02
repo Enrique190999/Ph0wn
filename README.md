@@ -39,3 +39,4 @@ python create_phishing/create_form.py -i cloned_site.html -o phishing_site.html
 python server/post_server.py
 
 # 4. Open phishing_site.html locally and test login submission
+    
