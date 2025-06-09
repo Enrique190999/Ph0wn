@@ -69,18 +69,10 @@ def create_form(carpeta, fichero_html):
         body_final = body_template
 
     soup,sel_boton = clear_format(soup,sel_boton)
-    print(f"EL BOTON DESPUES DE LIMPIAR EN LA FUNCION INICIAL {sel_boton}")
     
     with open(ruta, "w", encoding="utf-8") as f:
         f.write(str(soup.prettify()))
 
-    # Guardamos datos necesarios para inyectar
-    print(f""" "sel_user": sel_user,
-        "sel_pass": {sel_pass},
-        "sel_boton": {sel_boton},
-        "metodo": {metodo.upper()},
-        "url_final": {url_final},
-        "body_final": {body_final}""")
     return {
         "sel_user": sel_user,
         "sel_pass": sel_pass,
@@ -209,3 +201,4 @@ def clear_format(soup, sel_boton):
 
     console.print(f"[green]✅ Botón preparado con id → selector final:[/] {new_selector}")
     return soup, new_selector
+
